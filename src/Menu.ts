@@ -2,12 +2,9 @@ import {Queue} from "./queue";
 import leia = require("readline-sync");
 import {Colors} from "./util/color";
 import { Conta } from "./model/conta";
+import { ContaController } from "./controller/ContaController";
 
-// Lista de contas para teste
-const contas: Conta[] = [
-  new Conta(1, "David", 900),
-  new Conta(2, "Carlos", 3000)
-];
+const controller = new ContaController();
 
 const fila = new Queue<string>();
 let continuar: boolean = true;
@@ -33,107 +30,76 @@ opcao = leia.questionInt();
 
 console.log(opcao);
 
-switch(opcao){
-      case 1: {
-      const numero = leia.questionInt("Digite o número da conta: ");
-      const titular = leia.question("Digite o nome do titular: ");
-      const saldoInicial = leia.questionFloat("Digite o saldo inicial: ");
-      contas.push(new Conta(numero, titular, saldoInicial));
-      console.log(Colors.GREEN + "Conta criada com sucesso!" + Colors.RESET);
-      break;
-    }
+switch (opcao) {
+        case 1: {
+            const numero = leia.questionInt("Digite o numero da conta: ");
+            const titular = leia.question("Digite o nome do titular: ");
+            const saldoInicial = leia.questionFloat("Digite o saldo inicial: ");
+            const novaConta = new class extends Conta {}(numero, titular, saldoInicial); // Instancia de Conta abstrata
+            controller.cadastrar(novaConta);
+            console.log(Colors.GREEN + "Conta criada com sucesso!" + Colors.RESET);
+            break;
+        }
 
-    case 2:
-      contas.forEach(c => c.visualizar());
-      break;
+        case 2:
+            controller.listarTodas().forEach(c => c.visualizar());
+            break;
 
-    case 3: {
-      const numBusca = leia.questionInt("Digite o número da conta: ");
-      const contaEncontrada = contas.find(c => c.numero === numBusca);
-      if (contaEncontrada) {
-        contaEncontrada.visualizar();
-      } else {
-        console.log(Colors.RED + "Conta não encontrada." + Colors.RESET);
-      }
-      break;
-    }
+        case 3: {
+            const numero = leia.questionInt("Digite o numero da conta: ");
+            const conta = controller.procurarPorNumero(numero);
+            if (conta) conta.visualizar();
+            else console.log(Colors.RED + "Conta não encontrada" + Colors.RESET);
+            break;
+        }
 
-    case 4: {
-      const numAtualizar = leia.questionInt("Digite o número da conta: ");
-      const contaAtualizar = contas.find(c => c.numero === numAtualizar);
-      if (contaAtualizar) {
-        const novoTitular = leia.question("Digite o novo nome do titular: ");
-        contaAtualizar.titular = novoTitular;
-        console.log(Colors.GREEN + "Dados atualizados com sucesso!" + Colors.RESET);
-      } else {
-        console.log(Colors.RED + "Conta não encontrada." + Colors.RESET);
-      }
-      break;
-    }
+        case 4: {
+            const numero = leia.questionInt("Digite o numero da conta: ");
+            const conta = controller.procurarPorNumero(numero);
+            if (conta) {
+                const novoTitular = leia.question("Digite o novo nome do titular: ");
+                conta.titular = novoTitular;
+                controller.atualizar(conta);
+                console.log(Colors.GREEN + "Conta atualizada com sucesso!" + Colors.RESET);
+            } else console.log(Colors.RED + "Conta não encontrada" + Colors.RESET);
+            break;
+        }
 
-    case 5: {
-      const numApagar = leia.questionInt("Digite o número da conta: ");
-      const index = contas.findIndex(c => c.numero === numApagar);
-      if (index !== -1) {
-        contas.splice(index, 1);
-        console.log(Colors.GREEN + "Conta apagada com sucesso!" + Colors.RESET);
-      } else {
-        console.log(Colors.RED + "Conta não encontrada." + Colors.RESET);
-      }
-      break;
-    }
+        case 5: {
+            const numero = leia.questionInt("Digite o numero da conta: ");
+            controller.deletar(numero);
+            console.log(Colors.GREEN + "Conta apagada com sucesso!" + Colors.RESET);
+            break;
+        }
 
-    case 6: {
-      const numSaque = leia.questionInt("Digite o número da conta: ");
-      const contaSaque = contas.find(c => c.numero === numSaque);
-      if (contaSaque) {
-        const valor = leia.questionFloat("Digite o valor para saque: ");
-        contaSaque.sacar(valor);
-      } else {
-        console.log(Colors.RED + "Conta não encontrada." + Colors.RESET);
-      }
-      break;
-    }
+        case 6: {
+            const numero = leia.questionInt("Digite o numero da conta: ");
+            const valor = leia.questionFloat("Digite o valor para saque: ");
+            controller.sacar(numero, valor);
+            break;
+        }
 
-    case 7: {
-      const numDeposito = leia.questionInt("Digite o número da conta: ");
-      const contaDeposito = contas.find(c => c.numero === numDeposito);
-      if (contaDeposito) {
-        const valor = leia.questionFloat("Digite o valor para depósito: ");
-        contaDeposito.depositar(valor);
-      } else {
-        console.log(Colors.RED + "Conta não encontrada." + Colors.RESET);
-      }
-      break;
-    }
+        case 7: {
+            const numero = leia.questionInt("Digite o numero da conta: ");
+            const valor = leia.questionFloat("Digite o valor para deposito: ");
+            controller.depositar(numero, valor);
+            break;
+        }
 
-    case 8: {
-      const numOrigem = leia.questionInt("Digite o número da conta de origem: ");
-      const numDestino = leia.questionInt("Digite o número da conta de destino: ");
-      const valor = leia.questionFloat("Digite o valor a transferir: ");
-
-      const contaOrigem = contas.find(c => c.numero === numOrigem);
-      const contaDestino = contas.find(c => c.numero === numDestino);
-
-      if (!contaOrigem || !contaDestino) {
-        console.log(Colors.RED + "Conta(s) não encontrada(s)." + Colors.RESET);
-      } else if (contaOrigem.saldo < valor) {
-        console.log(Colors.RED + "Saldo insuficiente para transferência." + Colors.RESET);
-      } else {
-        contaOrigem.sacar(valor);
-        contaDestino.depositar(valor);
-        console.log(Colors.GREEN + "Transferência realizada com sucesso!" + Colors.RESET);
-      }
-      break;
-    }
+        case 8: {
+            const origem = leia.questionInt("Digite o numero da conta de origem: ");
+            const destino = leia.questionInt("Digite o numero da conta de destino: ");
+            const valor = leia.questionFloat("Digite o valor a transferir: ");
+            controller.transferir(origem, destino, valor);
+            break;
+        }
 
     case 9:
-    console.log(Colors.YELLOW + "Até a próxima");
-    continuar = false;
-    break;
+      console.log(Colors.YELLOW + "Ate a proxima");
+      continuar = false;
+      break;
 
     default:
-    console.log(Colors.RED +"Opção inválida, retorne ao menu");
-
-    }
-} while(continuar);
+      console.log(Colors.RED + "Opção invalida, retorne ao menu");
+  }
+} while (continuar);
